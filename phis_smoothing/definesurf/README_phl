@@ -1,0 +1,15 @@
+Workflow for smoothing PHIS for the finite-volume dynamical core
+================================================================
+
+1. go to the input/make_raw_phis_from_usgs/ directory
+
+2. the NCL script (make-10min-raw-phis.ncl) will take the raw 30 sec (~1km) raw USGS data in netCDF
+   format (usgs-rawdata.nc) and average it to a 10min grid (grid descriptor is 10min-usgs-fv.nc).
+
+       run the ncl script: ncl < make-10min-raw-phis.ncl
+
+   It should generate a file named: 10min-phis-raw.nc
+
+3. go back to the definesurf directory and compile the smoothing code with make
+
+4. run the script: ./run.sh which should generate the smoothed PHIS file: smooth-phis.nc
