@@ -70,7 +70,19 @@ source /glade/u/apps/ch/opt/python/3.6.4/intel/17.0.1/bin/ncar_pylib
 
 #####
 
-ScratchRun=/glade/scratch/cmip6/b.e21.B1850G.f09_g17_gl4.CMIP6-ssp585-withism.001/run
+#ScratchRun=/glade/scratch/cmip6/b.e21.B1850G.f09_g17_gl4.CMIP6-ssp585-withism.001/run
+ScratchRun=/glade/scratch/katec/bg.e21.B1850G.f19_g17.HOLO_transient_9.0ka.001/run
+
+# If Use_topoDataset_as_default is true, then the file topoDataset.nc in your run dir
+# will be used as the background (non-GRIS areas) topography, if false, then the PI 
+# bdntopo file will be used as the background default. The PI bndtopo file can be changed 
+# by setting Use_spec_topoDataset to 1 (true), and setting spec_topoDataset_filename 
+# to the path and file you wish to use. This will only be applied if 
+# Use_topoDataset_as_default is 0 (false).
+
+Use_topoDataset_as_default=1  # 1=true 0=false
+Use_spec_topoDataset=0        # 1=true 0=false
+spec_topoDataset_filename=''
 
 #####
 
@@ -194,7 +206,14 @@ if ncdump -h $CAM_Restart_File | grep -q 'lon = 288' && ncdump -h $CAM_Restart_F
  grid=fv_0.9x1.25
  gridFile=$grid.nc
  glandMaskFile=$Data_Directory/greenland_mask_FV1.nc
- topoDatasetDef=$Data_Directory/fv_0.9x1.25_topo_c170415.nc
+ if [ $Use_topoDataset_as_default == 1 ]; then
+     topoDatasetDef=$ScratchRun/topoDataset.nc
+ elif [ $Use_spec_topoDataset == 1 ]; then
+     topoDatasetDef=$spec_topoDataset_filename
+ else
+     topoDatasetDef=$Data_Directory/fv_0.9x1.25_topo_c170415.nc
+ fi
+ echo "   Using $topoDatasetDef as the default background dataset"
 
 elif ncdump -h $CAM_Restart_File | grep -q 'lon = 144' && ncdump -h $CAM_Restart_File | grep -q 'lat = 96'; then
  echo "   Based on dimension size, CAM data APPEARS to be on a FV2 CESM grid"
@@ -203,7 +222,14 @@ elif ncdump -h $CAM_Restart_File | grep -q 'lon = 144' && ncdump -h $CAM_Restart
  grid=fv_1.9x2.5
  gridFile=$grid.nc
  glandMaskFile=$Data_Directory/greenland_mask_FV2.nc
- topoDatasetDef=$Data_Directory/fv_1.9x2.5_topo_c061116.nc
+ if [ $Use_topoDataset_as_default == 1 ]; then
+     topoDatasetDef=$ScratchRun/topoDataset.nc
+ elif [ $Use_spec_topoDataset == 1 ]; then
+     topoDatasetDef=$spec_topoDataset_filename
+ else
+     topoDatasetDef=$Data_Directory/fv_1.9x2.5_topo_c061116.nc
+ fi
+ echo "   Using $topoDatasetDef as the default background dataset"
 
 else
   echo "  Error: CAM restart appears to be of an incompatible resolution with current script"  
@@ -338,7 +364,7 @@ if [ "$grid" == fv_0.9x1.25 ]; then
     nridge_subsample = 8
     lread_smooth_topofile = .true.
   /
-  EOF
+EOF
 
 elif [ "$grid" == fv_1.9x2.5 ]; then
   cat > cube_to_target.nl <<EOF
@@ -362,7 +388,7 @@ elif [ "$grid" == fv_1.9x2.5 ]; then
     nridge_subsample = 16
     lread_smooth_topofile = .true.
   /
-  EOF
+EOF
 fi
 
 echo "   Running cube_to_target..."
@@ -372,6 +398,7 @@ echo "   Running cube_to_target..."
 # --- smooth topo w/ 60-point smoother
 sed '/lread_smooth_topofile/s/.true./.false./' < cube_to_target.nl > tmp.nl
 cp tmp.nl cube_to_target.nl
+
 ./cube_to_target
 
 if [ $? -ne 0 ]
@@ -387,6 +414,7 @@ sed '/lread_smooth_topofile/s/.false./.true./' < cube_to_target.nl > tmp2.nl
 cp tmp2.nl cube_to_target.nl
 #sed '/lfind_ridges/s/.true./.false./' < cube_to_target.nl > tmp2.nl ## may need this
 #cp tmp2.nl cube_to_target.nl
+
 ./cube_to_target
 
 if [ $? -ne 0 ]
@@ -404,6 +432,7 @@ if [ "$grid" == fv_0.9x1.25 ]; then
     sed '/ncube_sph_smooth_coarse/s/60/8/' < cube_to_target.nl > tmp3.nl
 elif [ "$grid" == fv_1.9x2.5 ]; then
     sed '/ncube_sph_smooth_coarse/s/120/16/' < cube_to_target.nl > tmp3.nl
+fi
 cp tmp3.nl cube_to_target.nl
 ./cube_to_target
 
@@ -419,6 +448,7 @@ sed '/lread_smooth_topofile/s/.false./.true./' < cube_to_target.nl > tmp4.nl
 cp tmp4.nl cube_to_target.nl
 sed '/lfind_ridges/s/.true./.false./' < cube_to_target.nl > tmp4.nl
 cp tmp4.nl cube_to_target.nl
+
 ./cube_to_target
 
 if [ $? -ne 0 ]
@@ -441,7 +471,7 @@ c2tOutputDir=$Working_Directory/cube_to_target/output
 #c2t060=$c2tOutputDir/${grid}_nc3000_Nsw042_Nrs008_Co060_Fi001.nc
 #c2t008=$c2tOutputDir/${grid}_nc3000_NoAniso_Co008_Fi001.nc
 
-elif [ "$grid" == fv_0.9x1.25 ]; then
+if [ "$grid" == fv_0.9x1.25 ]; then
   c2t060=$c2tOutputDir/${grid}_nc3000_Nsw042_Nrs008_Co060_Fi001.nc
   c2t008=$c2tOutputDir/${grid}_nc3000_NoAniso_Co008_Fi001.nc
 elif [ "$grid" == fv_1.9x2.5 ]; then

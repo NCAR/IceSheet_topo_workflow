@@ -64,7 +64,6 @@ module load python/3.6.8
 #module load netcdf4-python
 
 ## Load python libraries
-#source /glade/u/apps/ch/opt/python/2.7.14/intel/17.0.1/bin/ncar_pylib
 source /glade/u/apps/ch/opt/python/3.6.4/intel/17.0.1/bin/ncar_pylib
 
 
@@ -76,6 +75,17 @@ export CaseDir={{ caseroot }}
 ##ScratchRun=/glade/scratch/cmip6/b.e21.B1850G.f09_g17_gl4.CMIP6-1pctCO2-4xext.001/run
 cd $CaseDir
 export ScratchRun=`./xmlquery --value RUNDIR`
+
+# If Use_topoDataset_as_default is true, then the file topoDataset.nc in your run dir
+# will be used as the background (non-GRIS areas) topography, if false, then the PI 
+# bdntopo file will be used as the background default. The PI bndtopo file can be changed 
+# by setting Use_spec_topoDataset to 1 (true), and setting spec_topoDataset_filename 
+# to the path and file you wish to use. This will only be applied if 
+# Use_topoDataset_as_default is 0 (false).
+
+Use_topoDataset_as_default=1  # 1=true 0=false
+Use_spec_topoDataset=0        # 1=true 0=false
+spec_topoDataset_filename=''
 
 #####
 
@@ -131,7 +141,6 @@ if [ -z "${ISM_Topo_File// }" ]; then
   echo "   Error: Ice sheet topography input file $ISM_Topo_File does not exist"
   exit 1
 fi
-
 if [ ! -e $CAM_Restart_File ]; then
   echo "   Error: CAM restart file $CAM_Restart_File does not exist"
   exit 1
@@ -139,7 +148,7 @@ fi
 if [ -z "${CAM_Restart_File// }" ]; then
   echo "   Error: CAM restart file $CAM_Restart_File does not exist"
   exit 1
-fi
+fi 
 echo "   Success: input/output files exist:"
 echo "   Ice sheet topography input file = $ISM_Topo_File"
 echo "   CAM restart file = $CAM_Restart_File"
@@ -200,7 +209,14 @@ if ncdump -h $CAM_Restart_File | grep -q 'lon = 288' && ncdump -h $CAM_Restart_F
  grid=fv_0.9x1.25
  gridFile=$grid.nc
  glandMaskFile=$Data_Directory/greenland_mask_FV1.nc
- topoDatasetDef=$Data_Directory/fv_0.9x1.25_topo_c170415.nc
+ if [ $Use_topoDataset_as_default == 1 ]; then
+     topoDatasetDef=$ScratchRun/topoDataset.nc
+ elif [ $Use_spec_topoDataset == 1 ]; then
+     topoDatasetDef=$spec_topoDataset_filename
+ else
+     topoDatasetDef=$Data_Directory/fv_0.9x1.25_topo_c170415.nc
+ fi
+ echo "   Using $topoDatasetDef as the default background dataset"
 
 elif ncdump -h $CAM_Restart_File | grep -q 'lon = 144' && ncdump -h $CAM_Restart_File | grep -q 'lat = 96'; then
  echo "   Based on dimension size, CAM data APPEARS to be on a FV2 CESM grid"
@@ -209,7 +225,14 @@ elif ncdump -h $CAM_Restart_File | grep -q 'lon = 144' && ncdump -h $CAM_Restart
  grid=fv_1.9x2.5
  gridFile=$grid.nc
  glandMaskFile=$Data_Directory/greenland_mask_FV2.nc
- topoDatasetDef=$Data_Directory/fv_1.9x2.5_topo_c061116.nc
+ if [ $Use_topoDataset_as_default == 1 ]; then
+     topoDatasetDef=$ScratchRun/topoDataset.nc
+ elif [ $Use_spec_topoDataset == 1 ]; then
+     topoDatasetDef=$spec_topoDataset_filename
+ else
+     topoDatasetDef=$Data_Directory/fv_1.9x2.5_topo_c061116.nc
+ fi
+ echo "   Using $topoDatasetDef as the default background dataset"
 
 else
   echo "  Error: CAM restart appears to be of an incompatible resolution with current script"  
@@ -322,28 +345,54 @@ echo "-> Running cube_to_target SGH/SGH30 generator..."
        
 cd $Working_Directory/cube_to_target
 
-cat > cube_to_target.nl <<EOF
-&topoparams
-  grid_descriptor_fname           = '$Data_Directory/$gridFile'
-  output_grid                     = '$grid'
-  intermediate_cubed_sphere_fname = '$Working_Directory/bin_to_cube/ncube3000.nc'
-  output_fname                    = 'junk'
-  externally_smoothed_topo_file   = 'junk'
-  lsmooth_terr = .false.
-  lexternal_smooth_terr = .false.
-  lzero_out_ocean_point_phis = .false.
-  lzero_negative_peaks = .true.
-  lsmooth_on_cubed_sphere = .true.
-  ncube_sph_smooth_coarse = 60
-  ncube_sph_smooth_fine = 1
-  ncube_sph_smooth_iter = 1
-  lfind_ridges = .true.
-  lridgetiles = .false.
-  nwindow_halfwidth = 42
-  nridge_subsample = 8
-  lread_smooth_topofile = .true.
-/
+if [ "$grid" == fv_0.9x1.25 ]; then
+  cat > cube_to_target.nl <<EOF
+  &topoparams
+    grid_descriptor_fname           = '$Data_Directory/$gridFile'
+    output_grid                     = '$grid'
+    intermediate_cubed_sphere_fname = '$Working_Directory/bin_to_cube/ncube3000.nc'
+    output_fname                    = 'junk'
+    externally_smoothed_topo_file   = 'junk'
+    lsmooth_terr = .false.
+    lexternal_smooth_terr = .false.
+    lzero_out_ocean_point_phis = .false.
+    lzero_negative_peaks = .true.
+    lsmooth_on_cubed_sphere = .true.
+    ncube_sph_smooth_coarse = 60
+    ncube_sph_smooth_fine = 1
+    ncube_sph_smooth_iter = 1
+    lfind_ridges = .true.
+    lridgetiles = .false.
+    nwindow_halfwidth = 42
+    nridge_subsample = 8
+    lread_smooth_topofile = .true.
+  /
 EOF
+
+elif [ "$grid" == fv_1.9x2.5 ]; then
+  cat > cube_to_target.nl <<EOF
+  &topoparams
+    grid_descriptor_fname           = '$Data_Directory/$gridFile'
+    output_grid                     = '$grid'
+    intermediate_cubed_sphere_fname = '$Working_Directory/bin_to_cube/ncube3000.nc'
+    output_fname                    = 'junk'
+    externally_smoothed_topo_file   = 'junk'
+    lsmooth_terr = .false.
+    lexternal_smooth_terr = .false.
+    lzero_out_ocean_point_phis = .false.
+    lzero_negative_peaks = .true.
+    lsmooth_on_cubed_sphere = .true.
+    ncube_sph_smooth_coarse = 120
+    ncube_sph_smooth_fine = 1
+    ncube_sph_smooth_iter = 1
+    lfind_ridges = .true.
+    lridgetiles = .false.
+    nwindow_halfwidth = 84
+    nridge_subsample = 16
+    lread_smooth_topofile = .true.
+  /
+EOF
+fi
 
 echo "   Running cube_to_target..."
 
@@ -352,6 +401,7 @@ echo "   Running cube_to_target..."
 # --- smooth topo w/ 60-point smoother
 sed '/lread_smooth_topofile/s/.true./.false./' < cube_to_target.nl > tmp.nl
 cp tmp.nl cube_to_target.nl
+
 ./cube_to_target
 
 if [ $? -ne 0 ]
@@ -367,6 +417,7 @@ sed '/lread_smooth_topofile/s/.false./.true./' < cube_to_target.nl > tmp2.nl
 cp tmp2.nl cube_to_target.nl
 #sed '/lfind_ridges/s/.true./.false./' < cube_to_target.nl > tmp2.nl ## may need this
 #cp tmp2.nl cube_to_target.nl
+
 ./cube_to_target
 
 if [ $? -ne 0 ]
@@ -380,7 +431,11 @@ fi
 # --- Greenland SGH30 adjustment
 sed '/lread_smooth_topofile/s/.true./.false./' < cube_to_target.nl > tmp3.nl
 cp tmp3.nl cube_to_target.nl
-sed '/ncube_sph_smooth_coarse/s/60/8/' < cube_to_target.nl > tmp3.nl
+if [ "$grid" == fv_0.9x1.25 ]; then
+    sed '/ncube_sph_smooth_coarse/s/60/8/' < cube_to_target.nl > tmp3.nl
+elif [ "$grid" == fv_1.9x2.5 ]; then
+    sed '/ncube_sph_smooth_coarse/s/120/16/' < cube_to_target.nl > tmp3.nl
+fi
 cp tmp3.nl cube_to_target.nl
 ./cube_to_target
 
@@ -396,6 +451,7 @@ sed '/lread_smooth_topofile/s/.false./.true./' < cube_to_target.nl > tmp4.nl
 cp tmp4.nl cube_to_target.nl
 sed '/lfind_ridges/s/.true./.false./' < cube_to_target.nl > tmp4.nl
 cp tmp4.nl cube_to_target.nl
+
 ./cube_to_target
 
 if [ $? -ne 0 ]
@@ -412,10 +468,19 @@ cd $Working_Directory/postproc
 
 topoDataset=$ScratchRun/topoDataset.nc
 cp $topoDatasetDef $topoDataset
+chmod u+w $topoDataset
 
 c2tOutputDir=$Working_Directory/cube_to_target/output
-c2t060=$c2tOutputDir/${grid}_nc3000_Nsw042_Nrs008_Co060_Fi001.nc
-c2t008=$c2tOutputDir/${grid}_nc3000_NoAniso_Co008_Fi001.nc
+#c2t060=$c2tOutputDir/${grid}_nc3000_Nsw042_Nrs008_Co060_Fi001.nc
+#c2t008=$c2tOutputDir/${grid}_nc3000_NoAniso_Co008_Fi001.nc
+
+if [ "$grid" == fv_0.9x1.25 ]; then
+  c2t060=$c2tOutputDir/${grid}_nc3000_Nsw042_Nrs008_Co060_Fi001.nc
+  c2t008=$c2tOutputDir/${grid}_nc3000_NoAniso_Co008_Fi001.nc
+elif [ "$grid" == fv_1.9x2.5 ]; then
+  c2t060=$c2tOutputDir/${grid}_nc3000_Nsw084_Nrs016_Co120_Fi001.nc
+  c2t008=$c2tOutputDir/${grid}_nc3000_NoAniso_Co016_Fi001.nc
+fi
 
 python postproc_mask.py $CAM_Restart_File $topoDataset $glandMaskFile $c2t060 $c2t008
 
