@@ -23,7 +23,7 @@ Instructions below describe how to use the CESM workflow tools to set up an auto
       <prereq>$BUILD_COMPLETE and $TEST</prereq>
     </job>
     <job name="case.topo_regen">
-      <template>$EXEROOT/../run/dynamic_atm_topo/template.topo_regen</template>
+      <template>$EXEROOT/../run/dynamic_atm_topog/template.topo_regen</template>
       <!-- If case.run (or case.test) exits successfully then run topo_regen-->
       <dependency>case.run or case.test</dependency>
       <prereq>1</prereq>
@@ -52,20 +52,20 @@ Instructions below describe how to use the CESM workflow tools to set up an auto
      ./create_newcase --case Test_topo_regen_workflow_m03 --compset B1850G --res f09_g17_gris4 --workflow topo_regen_10yr_cycle --project P93300606 --run-unsupported
 ```
 
-3. Go into your new case directory and run ``./case.setup`` you should see a warning that says "Input template file /glade/scratch/katec/Test_topo_regen_workflow_m03/bld/../run/dynamic_atm_topo/template.topo_regen for job case.topo_regen does not exist or cannot be read." If you don't see a warning like this for your case than something has gone wrong. Check that you did the first two steps correctly.
+3. Go into your new case directory and run ``./case.setup`` you should see a warning that says "Input template file /glade/scratch/katec/Test_topo_regen_workflow_m03/bld/../run/dynamic_atm_topog/template.topo_regen for job case.topo_regen does not exist or cannot be read." If you don't see a warning like this for your case than something has gone wrong. Check that you did the first two steps correctly.
 
 4. If you do get the warning, now it's time to get the topography updating tools. Go to your run directory (so, for the above example case, ``cd /glade/scratch/user/Test_topo_regen_workflow_m03/run`` and in that directory type:
 ```
-     > git clone https://github.com/NCAR/IceSheet_topo_workflow.git dynamic_atm_topo 
+     > git clone https://github.com/NCAR/IceSheet_topo_workflow.git dynamic_atm_topog 
 ```
 
-This will checkout the topography updater into the "dynamic_atm_topo" subdirectory.
+This will checkout the topography updater into the "dynamic_atm_topog" subdirectory.
 
-5. Now type ``cd dynamic_atm_topo/bin_to_cube`` and type ``make``. This will build that tool. When it's done type ``cd ../cube_to_target`` and type ``make``. This will build the other tool.
+5. Now type ``cd dynamic_atm_topog/bin_to_cube`` and type ``make``. This will build that tool. When it's done type ``cd ../cube_to_target`` and type ``make``. This will build the other tool.
 
 6. Go back to your case directory. Type ``./case.setup --reset`` and now you should see it say:
 ```
-     Writing case.topo_regen script from input template /glade/scratch/user/Test_topo_regen_workflow_m04/bld/../run/dynamic_atm_topo/template.topo_regen
+     Writing case.topo_regen script from input template /glade/scratch/user/Test_topo_regen_workflow_m04/bld/../run/dynamic_atm_topog/template.topo_regen
 
      Creating file .case.topo_regen
 ```

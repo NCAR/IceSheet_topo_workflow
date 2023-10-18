@@ -48,17 +48,17 @@
 # -------------------------------------------------------------------------
 
 ## Load shell
-if [ $SHELL == /bin/bash ]; then
-    source /glade/u/apps/ch/opt/Lmod/7.3.14/lmod/7.3.14/init/bash
-elif [ $SHELL == /bin/tcsh ]; then
-    source /glade/u/apps/ch/opt/Lmod/7.3.14/lmod/7.3.14/init/tcsh
-fi
+#if [ $SHELL == /bin/bash ]; then
+source /glade/u/apps/ch/opt/Lmod/7.3.14/lmod/7.3.14/init/bash
+#elif [ $SHELL == /bin/tcsh ]; then
+#    source /glade/u/apps/ch/opt/Lmod/7.3.14/lmod/7.3.14/init/tcsh
+#fi
 
 source /etc/profile.d/modules.sh
 
 module load nco
 module load ncl/6.6.2
-module load python/3.6.8
+module load python
 
 #module load numpy
 #module load netcdf4-python
@@ -71,7 +71,7 @@ source /glade/u/apps/ch/opt/python/3.6.4/intel/17.0.1/bin/ncar_pylib
 #####
 
 #ScratchRun=/glade/scratch/cmip6/b.e21.B1850G.f09_g17_gl4.CMIP6-ssp585-withism.001/run
-ScratchRun=/glade/scratch/katec/bg.e21.B1850G.f19_g17.HOLO_transient_9.0ka.001/run
+ScratchRun=/glade/scratch/katec/mirens_topoDataset/
 
 # If Use_topoDataset_as_default is true, then the file topoDataset.nc in your run dir
 # will be used as the background (non-GRIS areas) topography, if false, then the PI 
