@@ -61,7 +61,7 @@ Instructions below describe how to use the CESM workflow tools to set up an auto
 
 This will checkout the topography updater into the "dynamic_atm_topog" subdirectory.
 
-5. Now type ``cd dynamic_atm_topog/bin_to_cube`` and type ``make``. This will build that tool. When it's done type ``cd ../cube_to_target`` and type ``make``. This will build the other tool.
+5. On Derecho, type "module load gcc" . Then ``cd dynamic_atm_topog/bin_to_cube`` and type ``gmake -f Makefile``. This will build that tool. When it's done type ``cd ../cube_to_target`` and type ``gmake -f Makefile``. This will build the other tool.
 
 6. Go back to your case directory. Type ``./case.setup --reset`` and now you should see it say:
 ```
