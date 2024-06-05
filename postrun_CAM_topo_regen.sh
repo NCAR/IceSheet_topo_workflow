@@ -58,20 +58,22 @@ source /etc/profile.d/modules.sh
 
 module load nco
 module load ncl/6.6.2
-module load python
+module load conda
+
+conda activate npl
 
 #module load numpy
 #module load netcdf4-python
 
 ## Load python libraries
-source /glade/u/apps/ch/opt/python/3.6.4/intel/17.0.1/bin/ncar_pylib
+##source /glade/u/apps/ch/opt/python/3.6.4/intel/17.0.1/bin/ncar_pylib
 
 
 
 #####
 
 #ScratchRun=/glade/scratch/cmip6/b.e21.B1850G.f09_g17_gl4.CMIP6-ssp585-withism.001/run
-ScratchRun=/glade/scratch/katec/mirens_topoDataset/
+ScratchRun=/glade/derecho/scratch/katec/TestDynTopoData
 
 # If Use_topoDataset_as_default is true, then the file topoDataset.nc in your run dir
 # will be used as the background (non-GRIS areas) topography, if false, then the PI 
@@ -125,7 +127,7 @@ else
 
 fi
 
-export Data_Directory=/glade/p/cesm/liwg/cam_dyn_topog_data
+export Data_Directory=/glade/campaign/cesm/development/liwg/cam_dyn_topog_data
 
 echo "Input CISM restart file is $ISM_Topo_File"
 echo "CAM restart file (only used for an array size check) is $CAM_Restart_File"
